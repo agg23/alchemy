@@ -1,6 +1,6 @@
+use crate::lexer::Token;
 use ansi_term::Style;
 use lalrpop_util::ParseError::*;
-use crate::lexer::Token;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, quote_spanned};
 
@@ -49,10 +49,7 @@ pub fn parse_error(input: &[Token], error: &ParseError) -> TokenStream {
                 compile_error! { "invalid token" }
             }
         }
-        UnrecognizedToken {
-            token: None,
-            expected,
-        } => {
+        UnrecognizedEOF { location, expected } => {
             let msg = format!(
                 "unexpected end of macro; missing {}",
                 pprint_tokens(&expected)
@@ -62,7 +59,7 @@ pub fn parse_error(input: &[Token], error: &ParseError) -> TokenStream {
             }
         }
         UnrecognizedToken {
-            token: Some((_, token, _)),
+            token: (_, token, _),
             expected,
         } => {
             let span = token.span();

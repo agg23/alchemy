@@ -15,12 +15,12 @@ maintenance = { status = "actively-developed" }
 [dependencies]
 alchemy-lifecycle = { version = "0.1", path = "../lifecycle", features = ["cocoa"] }
 alchemy-styles = { version = "0.1", path = "../styles" }
-objc = "0.2.6"
+objc = "0.2.7"
 objc_id = "0.1.1"
-dispatch = "0.1.4"
-cocoa = "0.18.4"
-core-foundation = "0.6"
-core-graphics = "0.17.1"
+dispatch = "0.2.0"
+cocoa = "0.24.0"
+core-foundation = "0.9.1"
+core-graphics = "0.22.2"
 
 [package.metadata.docs.rs]
 features = ["cocoa"]

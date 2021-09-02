@@ -1,25 +1,25 @@
 //! This wraps NTextField on macOS, and configures it to act like a label
 //! with standard behavior that most users would expect.
 
-use std::sync::{Once, ONCE_INIT};
+use std::sync::Once;
 
-use objc_id::{Id, ShareId};
-use objc::{msg_send, sel, sel_impl};
 use objc::declare::ClassDecl;
 use objc::runtime::{Class, Object, Sel, BOOL};
+use objc::{msg_send, sel, sel_impl};
+use objc_id::{Id, ShareId};
 
-use cocoa::base::{id, nil, YES, NO};
-use cocoa::foundation::{NSRect, NSPoint, NSSize, NSString};
+use cocoa::base::{id, nil, NO, YES};
+use cocoa::foundation::{NSPoint, NSRect, NSSize, NSString};
 
 use crate::color::IntoNSColor;
 
-use alchemy_styles::{Color, Layout, Appearance};
+use alchemy_styles::{Appearance, Color, Layout};
 
 use alchemy_lifecycle::traits::PlatformSpecificNodeType;
 
 static ALCHEMY_DELEGATE: &str = "alchemyDelegate";
 
-/// A wrapper for `NSText`. This holds retained pointers for the Objective-C 
+/// A wrapper for `NSText`. This holds retained pointers for the Objective-C
 /// runtime - namely, the view itself, and associated things such as background
 /// colors and so forth.
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub struct Text {
     inner_mut: Id<Object>,
     inner_share: ShareId<Object>,
     background_color: Id<Object>,
-    text_color: Id<Object>
+    text_color: Id<Object>,
 }
 
 impl Text {
@@ -38,13 +38,13 @@ impl Text {
     pub fn new() -> Text {
         let (inner_mut, inner_share) = unsafe {
             let initial_string = NSString::alloc(nil).init_str("");
-            let view: id = msg_send![register_class(), labelWithString:initial_string];
-            msg_send![view, setSelectable:YES];
-            msg_send![view, setDrawsBackground:YES];
-            msg_send![view, setBezeled:NO];
-            msg_send![view, setEditable:NO];
-            msg_send![view, setWantsLayer:YES];
-            msg_send![view, setLayerContentsRedrawPolicy:1];
+            let view: id = msg_send![register_class(), labelWithString: initial_string];
+            let _: () = msg_send![view, setSelectable: YES];
+            let _: () = msg_send![view, setDrawsBackground: YES];
+            let _: () = msg_send![view, setBezeled: NO];
+            let _: () = msg_send![view, setEditable: NO];
+            let _: () = msg_send![view, setWantsLayer: YES];
+            let _: () = msg_send![view, setLayerContentsRedrawPolicy:1];
             let x = view.clone();
             (Id::from_ptr(view), ShareId::from_ptr(x))
         };
@@ -54,7 +54,7 @@ impl Text {
             inner_mut: inner_mut,
             inner_share: inner_share,
             background_color: Color::transparent().into_nscolor(),
-            text_color: Color::transparent().into_nscolor()
+            text_color: Color::transparent().into_nscolor(),
         }
     }
 
@@ -67,7 +67,7 @@ impl Text {
     /// Appends a child NSText (or subclassed type) to this view.
     pub fn append_child(&mut self, child: PlatformSpecificNodeType) {
         unsafe {
-            msg_send![&*self.inner_mut, addSubview:child];
+            let _: () = msg_send![&*self.inner_mut, addSubview: child];
         }
     }
 
@@ -78,15 +78,15 @@ impl Text {
         unsafe {
             let rect = NSRect::new(
                 NSPoint::new(layout.location.x.into(), layout.location.y.into()),
-                NSSize::new(layout.size.width.into(), layout.size.height.into())
+                NSSize::new(layout.size.width.into(), layout.size.height.into()),
             );
 
             self.background_color = appearance.background_color.into_nscolor();
             self.text_color = appearance.text_color.into_nscolor();
-            
-            msg_send![&*self.inner_mut, setFrame:rect];
-            msg_send![&*self.inner_mut, setBackgroundColor:&*self.background_color];
-            msg_send![&*self.inner_mut, setTextColor:&*self.text_color];
+
+            let _: () = msg_send![&*self.inner_mut, setFrame: rect];
+            let _: () = msg_send![&*self.inner_mut, setBackgroundColor:&*self.background_color];
+            let _: () = msg_send![&*self.inner_mut, setTextColor:&*self.text_color];
         }
     }
 
@@ -97,14 +97,14 @@ impl Text {
     pub fn render(&mut self) {
         unsafe {
             let string_value = NSString::alloc(nil).init_str(&self.text);
-            msg_send![&*self.inner_mut, setStringValue:string_value];
+            let _: () = msg_send![&*self.inner_mut, setStringValue: string_value];
         }
     }
 }
 
 /// This is used for some specific calls, where macOS NSText needs to be
 /// forcefully dragged into the modern age (e.g, position coordinates from top left...).
-extern fn enforce_normalcy(_: &Object, _: Sel) -> BOOL {
+extern "C" fn enforce_normalcy(_: &Object, _: Sel) -> BOOL {
     return YES;
 }
 
@@ -112,12 +112,11 @@ extern fn enforce_normalcy(_: &Object, _: Sel) -> BOOL {
 /// to store.
 fn register_class() -> *const Class {
     static mut VIEW_CLASS: *const Class = 0 as *const Class;
-    static INIT: Once = ONCE_INIT;
+    static INIT: Once = Once::new();
 
     INIT.call_once(|| unsafe {
         let superclass = Class::get("NSTextField").unwrap();
         let mut decl = ClassDecl::new("AlchemyTextField", superclass).unwrap();
-        
         // Force NSText to render from the top-left, not bottom-left
         //decl.add_method(sel!(isFlipped), enforce_normalcy as extern fn(&Object, _) -> BOOL);
 
@@ -132,7 +131,6 @@ fn register_class() -> *const Class {
         // Note that NSText's don't really have a "delegate", I'm just using it here
         // for common terminology sake.
         decl.add_ivar::<usize>(ALCHEMY_DELEGATE);
-       
         VIEW_CLASS = decl.register();
     });
 
